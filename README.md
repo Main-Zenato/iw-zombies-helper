@@ -21,8 +21,8 @@ interface is available in **English** and **French** (Settings page).
 
 ## Quick start
 
-1. Download `iw-helper` from the [Releases](../../releases) page and unzip it anywhere, or
-   [build it](#installation).
+1. Download `iw-helper` from the [Releases](../../releases) page (the `steam` or `iw7-mod` zip, see
+   [Installation](#1-get-it)) and unzip it anywhere, or [build it](#installation).
 2. In Steam, set the game's launch options to `"C:\path\to\iw-helper-gui.exe" -- %command%`.
 3. Start the game from Steam: the tool's window opens with it.
 4. In a Zombies match, click an option or press its key (F1 to F11). Press **End** to turn everything
@@ -61,9 +61,15 @@ guarantee: the risk is not zero, and you use the tool at your own risk.
 3. Never in public matchmaking, and never in multiplayer: other players did not agree to it, and that is
    where reports and bans happen.
 
-Without `allow_steam_client = true` in the configuration, these features only work on
-[iw7-mod](https://github.com/auroramod/iw7-mod). The provided configuration file allows them on the Steam
-client: set it to `false` if you only want the CPU fix there.
+This is decided by `allow_steam_client`, in the `[memory]` section of
+[iw-helper.toml](iw-helper.toml#L37-L38):
+
+- `false`: these features only work on [iw7-mod](https://github.com/auroramod/iw7-mod); on the Steam
+  client, only the CPU fix applies;
+- `true`: they also work on the Steam client.
+
+The `iw7-mod` release zip ships with `false`, the `steam` zip with `true`. The file in this repository has
+`true`. You can change it at any time in `iw-helper.toml`, next to `iw-helper-gui.exe`.
 
 Safeguards:
 
@@ -86,9 +92,16 @@ profile and sends it online, and the servers can reset or sanction an account in
 
 ### 1. Get it
 
-**Ready-made:** download the latest `iw-helper-vX.Y.Z-windows-x64.zip` from the [Releases](../../releases)
-page and unzip it into a folder of your choice (not inside the game folder). It holds `iw-helper-gui.exe`,
-`iw-helper.exe`, `iw-helper.toml`, this README and the license. Windows SmartScreen may warn about an
+**Ready-made:** download the latest release from the [Releases](../../releases) page and unzip it into a
+folder of your choice (not inside the game folder). There are two zips, which differ only by
+`allow_steam_client` in `iw-helper.toml` (see [Game memory access](#game-memory-access-read-this-first)):
+
+| Zip | For | `allow_steam_client` |
+| --- | --- | --- |
+| `iw-helper-vX.Y.Z-steam-windows-x64.zip` | the Steam game (`iw7_ship.exe`) | `true` |
+| `iw-helper-vX.Y.Z-iw7-mod-windows-x64.zip` | [iw7-mod](https://github.com/auroramod/iw7-mod) | `false` |
+
+Each one holds `iw-helper-gui.exe`, `iw-helper.exe`, `iw-helper.toml`, this README and the license. Windows SmartScreen may warn about an
 unsigned program the first time: "More info" > "Run anyway".
 
 **From source:** with the game closed, from the project folder:
