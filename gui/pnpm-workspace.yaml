@@ -1,0 +1,3 @@
+# esbuild (utilisé par Vite) installe son exécutable par un script : c'est le seul autorisé.
+allowBuilds:
+  esbuild: true

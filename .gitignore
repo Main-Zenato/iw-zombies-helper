@@ -1,0 +1,16 @@
+# Build outputs and downloaded dependencies
+/target
+/gui/node_modules
+/gui/dist
+/gui/src-tauri/gen
+/gui/apercu
+
+# Session logs and working notes, kept on this PC only
+/logs
+/notes
+/html
+/archive
+
+# No compiled program in the repository
+*.exe
+*.dll

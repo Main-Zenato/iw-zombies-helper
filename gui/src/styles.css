@@ -1,0 +1,1301 @@
+/* Approach: a Windows 11 utility, like Settings or PowerToys. Font, sizes and colors are those of
+   the Windows dark theme (WinUI); the accent color is the one the user chose in Windows (variable
+   --accent, set by App.tsx). It has a single meaning: "this is on or selected". Yellow marks what
+   changes the game's code, red what was refused. */
+:root {
+  --base: #202020;
+  --layer: #272727;
+  --card: rgba(255, 255, 255, 0.051);
+  --card-stroke: rgba(0, 0, 0, 0.22);
+  --control: rgba(255, 255, 255, 0.061);
+  --control-hover: rgba(255, 255, 255, 0.084);
+  --control-pressed: rgba(255, 255, 255, 0.033);
+  --stroke: rgba(255, 255, 255, 0.07);
+  --stroke-top: rgba(255, 255, 255, 0.093);
+  --stroke-mid: rgba(255, 255, 255, 0.2);
+  --stroke-strong: rgba(255, 255, 255, 0.544);
+  --divider: rgba(255, 255, 255, 0.084);
+  --row-divider: rgba(255, 255, 255, 0.06);
+  --text: #ffffff;
+  --text-2: rgba(255, 255, 255, 0.786);
+  --text-3: rgba(255, 255, 255, 0.544);
+  /* Text of a row that does not respond for now: dimmed, but readable. */
+  --text-idle: rgba(255, 255, 255, 0.64);
+  --text-off: rgba(255, 255, 255, 0.363);
+  --accent: #60cdff;
+  --on-accent: #000000;
+  --success: #6ccb5f;
+  --success-bg: #393d1b;
+  --caution: #fce100;
+  --critical: #ff99a4;
+  --critical-bg: #442726;
+  --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", Consolas, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--base);
+  color: var(--text);
+  font: 400 14px/20px var(--font);
+  user-select: none;
+  cursor: default;
+  overflow: hidden;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+p {
+  margin: 0;
+}
+
+/* --- Frame: navigation pane, then the page on a lighter layer ----------------------------------- */
+.app {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  height: 100%;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 4px 8px;
+  min-height: 0;
+}
+
+.status {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: center;
+  align-content: center;
+  /* One or two lines of text: the navigation does not move when the game state changes. */
+  min-height: 38px;
+  margin: 4px 12px 14px;
+}
+
+.status b {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status small {
+  grid-column: 2;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.lamp {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-off);
+}
+
+.lamp[data-game="menu"] {
+  background: var(--accent);
+}
+
+.lamp[data-game="match"] {
+  background: var(--success);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav[data-footer="true"] {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--divider);
+}
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  text-align: left;
+}
+
+.nav-item svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.nav-item:hover,
+.nav-item[aria-current="page"] {
+  background: var(--control);
+}
+
+.nav-item:active {
+  background: var(--control-pressed);
+  color: var(--text-2);
+}
+
+.nav-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.nav-item:focus-visible {
+  outline-offset: -1px;
+}
+
+.page {
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--layer);
+  border-top: 1px solid var(--card-stroke);
+  border-left: 1px solid var(--card-stroke);
+  border-top-left-radius: 8px;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  scrollbar-width: thin;
+}
+
+/* The page is a container: its rows wrap according to ITS width, not the window's (the navigation
+   pane takes a variable part of it). */
+.page-inner {
+  max-width: 1000px;
+  padding: 24px 36px 36px;
+  container: page / inline-size;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+h1 {
+  margin: 0;
+  font: 600 28px/36px var(--font-display);
+}
+
+h2 {
+  margin: 20px 0 6px;
+  font: 600 14px/20px var(--font);
+}
+
+.page-head + section > h2 {
+  margin-top: 8px;
+}
+
+.caption {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-2);
+  max-width: 84ch;
+}
+
+/* --- Information bar ------------------------------------------------------------------------- */
+.infobar {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 40px;
+  margin-bottom: 12px;
+  padding: 9px 14px;
+  border: 1px solid var(--card-stroke);
+  border-radius: 4px;
+  background: var(--control-pressed);
+}
+
+.infobar svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.infobar b {
+  font-weight: 600;
+}
+
+.infobar[data-tone="notice"] svg {
+  color: var(--text);
+}
+
+.infobar[data-tone="done"] {
+  background: var(--success-bg);
+}
+
+.infobar[data-tone="done"] svg {
+  color: var(--success);
+}
+
+.infobar[data-tone="refused"],
+.infobar[data-tone="error"] {
+  background: var(--critical-bg);
+}
+
+.infobar[data-tone="refused"] svg,
+.infobar[data-tone="error"] svg {
+  color: var(--critical);
+}
+
+/* --- Group of setting rows: a single surface, a hairline between rows -------------------------- */
+.group {
+  border: 1px solid var(--card-stroke);
+  border-radius: 6px;
+  background: var(--card);
+}
+
+.row,
+.option,
+.choice {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.group > * + * {
+  border-top: 1px solid var(--row-divider);
+}
+
+.group > :first-child {
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+}
+
+.group > :last-child {
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.group > button:hover:not(:disabled) {
+  background: var(--control);
+}
+
+.group > button:active:not(:disabled) {
+  background: var(--control-pressed);
+}
+
+.group > button:focus-visible {
+  outline-offset: -2px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  min-height: 48px;
+  padding: 6px 16px;
+}
+
+.row-text {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.row-text b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+}
+
+.row-text small {
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-2);
+}
+
+.row-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  margin-left: auto;
+}
+
+.row-side > .btn:not([data-quiet]) {
+  min-width: 92px;
+}
+
+/* A row that does not respond stays readable: its control dims, not its text. */
+.row[data-off="true"] .row-text b,
+.row:disabled .row-text b,
+.option:disabled .option-name,
+.choice:disabled .choice-name {
+  color: var(--text-idle);
+}
+
+.row[data-off="true"] .row-text small,
+.row:disabled .row-text small,
+.option:disabled .option-hint,
+.choice:disabled .choice-detail {
+  color: var(--text-3);
+}
+
+/* Shared marks: yellow triangle (changes the game's code) and "Trial" tag. */
+.mark {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: var(--caution);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 18px;
+  padding: 0 6px;
+  border: 1px solid var(--stroke-mid);
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-2);
+}
+
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend .cap {
+  min-width: 22px;
+  height: 14px;
+  padding: 0;
+}
+
+/* --- In match: options as a table (key, name, description, switch) ----------------------------- */
+.option {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 172px) minmax(0, 1fr) auto;
+  grid-template-areas: "cap name hint side";
+  align-items: center;
+  column-gap: 12px;
+  min-height: 40px;
+  padding: 4px 16px;
+}
+
+.option > .cap {
+  grid-area: cap;
+}
+
+.option-name {
+  grid-area: name;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.option-name > span:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option[aria-checked="true"] .option-name {
+  font-weight: 600;
+}
+
+.option-hint {
+  grid-area: hint;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-2);
+}
+
+.option-side {
+  grid-area: side;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Windows switch: outline when off, filled with the accent color when on. */
+.toggle-state {
+  min-width: 64px;
+  text-align: right;
+  color: var(--text-2);
+}
+
+[aria-checked="true"] .toggle-state {
+  color: var(--text);
+}
+
+:disabled .toggle-state {
+  color: var(--text-off);
+}
+
+.toggle {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 20px;
+  border: 1px solid var(--stroke-strong);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-2);
+  transition: transform 120ms cubic-bezier(0, 0, 0, 1);
+}
+
+[aria-checked="true"] .toggle {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+[aria-checked="true"] .toggle::after {
+  transform: translateX(20px);
+  background: var(--on-accent);
+}
+
+:disabled .toggle {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+:disabled .toggle::after {
+  background: var(--text-off);
+}
+
+:disabled[aria-checked="true"] .toggle {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+:disabled[aria-checked="true"] .toggle::after {
+  background: rgba(255, 255, 255, 0.53);
+}
+
+/* Keyboard key, like in PowerToys shortcuts. */
+.key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--stroke);
+  border-bottom-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  background: var(--control);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+:disabled .key {
+  color: var(--text-off);
+}
+
+/* An option's key acts as an indicator light: it takes the accent color when the option is on,
+   on Home as in the In match table. */
+.cap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 44px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--stroke);
+  border-bottom-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  background: var(--control);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+  transition: background-color 120ms cubic-bezier(0, 0, 0, 1);
+}
+
+[aria-checked="true"] > .cap,
+.cap[data-on="true"] {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+:disabled > .cap {
+  color: var(--text-3);
+}
+
+/* --- Controls -------------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--stroke);
+  border-top-color: var(--stroke-top);
+  border-radius: 4px;
+  background: var(--control);
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--control-hover);
+}
+
+.btn:active:not(:disabled) {
+  background: var(--control-pressed);
+  color: var(--text-2);
+}
+
+.btn:disabled {
+  background: rgba(255, 255, 255, 0.042);
+  color: var(--text-off);
+}
+
+.btn[data-accent="true"]:not(:disabled) {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn[data-accent="true"]:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn[data-accent="true"]:active:not(:disabled) {
+  opacity: 0.8;
+  color: var(--on-accent);
+}
+
+/* Discreet button ("Reset"): no background until hovered. Hidden, it keeps its space so controls
+   stay aligned from one row to the next. */
+.btn[data-quiet="true"] {
+  padding: 4px 8px;
+  border-color: transparent;
+  background: none;
+  color: var(--text-2);
+}
+
+.btn[data-quiet="true"]:hover:not(:disabled) {
+  background: var(--control);
+  color: var(--text);
+}
+
+.btn[data-quiet="true"]:disabled {
+  color: var(--text-off);
+}
+
+.btn[data-hidden="true"] {
+  visibility: hidden;
+}
+
+.numberbox {
+  display: inline-flex;
+  align-items: stretch;
+  flex: none;
+  width: 116px;
+  height: 32px;
+  border: 1px solid var(--stroke);
+  border-bottom-color: var(--stroke-strong);
+  border-radius: 4px;
+  background: var(--control);
+  overflow: hidden;
+}
+
+.numberbox:focus-within {
+  border-bottom-color: var(--accent);
+  box-shadow: inset 0 -1px 0 var(--accent);
+  background: rgba(30, 30, 30, 0.7);
+}
+
+.numberbox input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  padding: 0 0 0 8px;
+  border: 0;
+  background: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  user-select: text;
+  cursor: text;
+}
+
+.numberbox input:focus-visible {
+  outline: none;
+}
+
+.numberbox .unit {
+  align-self: center;
+  padding-left: 4px;
+  color: var(--text-2);
+}
+
+.numberbox button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--text-2);
+}
+
+.numberbox button:first-of-type {
+  margin-left: 6px;
+}
+
+.numberbox button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.numberbox button:hover:not(:disabled) {
+  background: var(--control-hover);
+}
+
+.numberbox button:disabled {
+  color: var(--text-off);
+}
+
+.numberbox[data-off="true"] {
+  border-bottom-color: var(--stroke);
+  color: var(--text-3);
+}
+
+.numberbox[data-off="true"] .unit {
+  color: var(--text-off);
+}
+
+.segmented {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.segmented button {
+  position: relative;
+  min-height: 30px;
+  padding: 0 14px 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.segmented button:hover:not(:disabled):not([aria-pressed="true"]) {
+  background: var(--control);
+}
+
+.segmented button[aria-pressed="true"] {
+  border-color: var(--stroke);
+  border-top-color: var(--stroke-top);
+  background: var(--control-hover);
+  color: var(--text);
+}
+
+.segmented button[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 16px;
+  height: 3px;
+  margin-left: -8px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.segmented button:disabled {
+  color: var(--text-off);
+}
+
+.segmented button:disabled[aria-pressed="true"]::after {
+  background: var(--text-off);
+}
+
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+
+.slider output {
+  min-width: 64px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.row[data-off="true"] .slider output {
+  color: var(--text-3);
+}
+
+.slider input {
+  width: 168px;
+  height: 20px;
+  margin: 0;
+  background: none;
+  appearance: none;
+}
+
+.slider input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) var(--fill), var(--stroke-strong) var(--fill));
+}
+
+.slider input::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent) 0 5px, #454545 5.5px);
+  appearance: none;
+}
+
+.slider input::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) var(--fill), var(--stroke-strong) var(--fill));
+}
+
+.slider input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent) 0 5px, #454545 5.5px);
+}
+
+.slider input:hover:not(:disabled)::-webkit-slider-thumb {
+  background: radial-gradient(circle, var(--accent) 0 6px, #454545 6.5px);
+}
+
+.slider input:disabled::-webkit-slider-runnable-track {
+  background: var(--text-off);
+}
+
+.slider input:disabled::-webkit-slider-thumb {
+  background: radial-gradient(circle, #717171 0 5px, #454545 5.5px);
+}
+
+.slider input:disabled::-moz-range-track {
+  background: var(--text-off);
+}
+
+.slider input:disabled::-moz-range-thumb {
+  background: radial-gradient(circle, #717171 0 5px, #454545 5.5px);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 4px;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.row[data-off="true"] .check {
+  color: var(--text-off);
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.state svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-3);
+}
+
+.state[data-ok="true"] svg {
+  color: var(--success);
+}
+
+/* --- Lobby: choosing the character, as a list (character, map) -------------------------------- */
+.choice {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 190px) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  min-height: 40px;
+  padding: 4px 16px;
+}
+
+.choice[aria-checked="true"] .choice-name {
+  font-weight: 600;
+}
+
+.choice-detail {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-2);
+}
+
+.radio {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--stroke-strong);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[aria-checked="true"] > .radio {
+  border-color: var(--accent);
+  background: radial-gradient(circle, var(--on-accent) 0 3.5px, var(--accent) 4px);
+}
+
+:disabled > .radio {
+  border-color: var(--text-off);
+}
+
+:disabled[aria-checked="true"] > .radio {
+  border-color: transparent;
+  background: radial-gradient(circle, #2b2b2b 0 3.5px, rgba(255, 255, 255, 0.3) 4px);
+}
+
+/* --- Home ------------------------------------------------------------------------------------ */
+.chevron {
+  flex: none;
+  color: var(--text-2);
+}
+
+/* The options board: one row per option, its key in front. */
+.board {
+  border: 1px solid var(--card-stroke);
+  border-radius: 6px;
+  background: var(--card);
+}
+
+.board-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 20px;
+  padding: 12px 8px 8px;
+}
+
+.board h3 {
+  margin: 0 0 4px;
+  padding: 0 8px;
+  font: 400 12px/16px var(--font);
+  color: var(--text-3);
+}
+
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-2);
+  text-align: left;
+}
+
+.opt:hover:not(:disabled) {
+  background: var(--control);
+}
+
+.opt:active:not(:disabled) {
+  background: var(--control-pressed);
+}
+
+.opt:focus-visible {
+  outline-offset: -1px;
+}
+
+.opt-label {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.opt > .mark,
+.opt > .tag {
+  margin-left: -4px;
+}
+
+.opt[aria-checked="true"] {
+  color: var(--text);
+}
+
+.opt:disabled {
+  color: var(--text-idle);
+}
+
+.board-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-top: 1px solid var(--row-divider);
+  border-radius: 0 0 5px 5px;
+  background: none;
+  color: var(--text-2);
+  text-align: left;
+}
+
+.board-more:hover {
+  background: var(--control);
+  color: var(--text);
+}
+
+.board-more:active {
+  background: var(--control-pressed);
+}
+
+.board-more:focus-visible {
+  outline-offset: -2px;
+}
+
+/* The tiles: one setting each, its value in large type, a click to go change it. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 4px;
+}
+
+.tile {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 0 12px;
+  padding: 12px 16px 14px;
+  border: 1px solid var(--card-stroke);
+  border-radius: 6px;
+  background: var(--card);
+  text-align: left;
+}
+
+.tile:hover {
+  background: var(--control-hover);
+}
+
+.tile:active {
+  background: var(--control-pressed);
+}
+
+.tile:focus-visible {
+  outline-offset: -1px;
+}
+
+.tile > svg:first-child {
+  width: 20px;
+  height: 20px;
+  color: var(--text-2);
+}
+
+.tile-label {
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tile b,
+.tile small {
+  grid-column: 2 / -1;
+}
+
+.tile b {
+  margin-top: 8px;
+  font: 600 20px/28px var(--font-display);
+}
+
+.tile small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-2);
+}
+
+.tile small svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+/* --- Settings: the list of keyboard shortcuts -------------------------------------------------- */
+.keys {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0 32px;
+  padding: 4px 16px;
+  border: 1px solid var(--card-stroke);
+  border-radius: 6px;
+  background: var(--card);
+}
+
+.keys div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 32px;
+}
+
+.keys i {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* --- Log ------------------------------------------------------------------------------------- */
+.log {
+  margin: 0;
+  padding: 8px 0;
+  border: 1px solid var(--card-stroke);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  font: 400 12px/18px var(--mono);
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+  user-select: text;
+  cursor: text;
+}
+
+.log:focus-visible {
+  outline-offset: -1px;
+}
+
+/* Each line: the time, then the text, which wraps aligned under its start. */
+.log-line {
+  padding: 0 14px 0 calc(14px + 10ch);
+  text-indent: -10ch;
+  white-space: pre-wrap;
+}
+
+.log-line time {
+  color: var(--text-3);
+}
+
+.log-line[data-tone="action"] {
+  color: var(--text);
+}
+
+.log-line[data-tone="refused"] {
+  background: rgba(255, 153, 164, 0.07);
+  box-shadow: inset 2px 0 0 var(--critical);
+  color: var(--critical);
+}
+
+.log-line[data-tone="refused"] time {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.log-empty {
+  padding: 2px 14px;
+  font-family: var(--font);
+  color: var(--text-3);
+  user-select: none;
+  cursor: default;
+}
+
+.page-inner:has(.journal) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: none;
+  padding-bottom: 20px;
+}
+
+.journal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.journal .log {
+  flex: 1;
+  min-height: 96px;
+  overflow-y: auto;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  scrollbar-width: thin;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-end {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.path {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-3);
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+/* --- Narrow page: the description goes under the name, the written state makes room ---------- */
+@container page (max-width: 640px) {
+  .option {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "cap name side"
+      "cap hint side";
+    padding-block: 6px;
+  }
+
+  .choice {
+    grid-template-columns: 18px minmax(0, 1fr);
+    padding-block: 6px;
+  }
+
+  .choice-detail {
+    grid-column: 2;
+  }
+
+  .toggle-state {
+    display: none;
+  }
+
+  /* Slider of a value (the one that does not write its value itself): shortened, so the row
+     fits without wrapping. */
+  .row-text {
+    flex-basis: 150px;
+  }
+
+  .slider:not(:has(output)) input {
+    width: 96px;
+  }
+}
+
+/* --- Narrow window: the pane shrinks to its icons ---------------------------------------------- */
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .nav-item {
+    padding: 0 10px;
+  }
+
+  .nav-item span,
+  .status b,
+  .status small {
+    display: none;
+  }
+
+  .status {
+    grid-template-columns: 10px;
+    justify-content: center;
+    margin: 4px 0 14px;
+  }
+
+  .page-inner {
+    padding: 20px 20px 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

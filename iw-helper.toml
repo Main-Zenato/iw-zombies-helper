@@ -1,0 +1,85 @@
+# iw-helper configuration. The graphical interface edits this file itself for the settings it
+# offers; everything else is changed here, then takes effect when the game is restarted.
+
+# Watched processes: the official Steam client and the iw7-mod community client.
+process_names = ["iw7_ship.exe", "iw7-mod.exe"]
+
+# --- Interface ----------------------------------------------------------------
+[interface]
+# Language of the interface, the log and the command line: "en" (English) or "fr" (Français).
+# Full survey files stay in French.
+language = "en"
+
+# --- Processor ----------------------------------------------------------------
+# Writes nothing into the game's memory: affinity + priority, like Task Manager.
+# No risk with the anti-cheat.
+[cpu]
+enabled = true
+# false = one logical thread per physical core (SMT/Hyper-Threading ignored by the
+# game). It is the most often reported stutter fix for IW7, but its effect depends
+# on the machine.
+smt = false
+# 0 = all cores. On a Ryzen with two CCDs (7900X, 7950X...), try half of the cores
+# (6 on a 7900X) to keep the game on a single CCD.
+max_cores = 0
+# normal | above_normal | high
+priority = "high"
+# Experimental: re-applies the affinity every N minutes (0 = never). Useful if
+# stutters come back after 20-30 minutes of play.
+reapply_minutes = 0
+
+# --- Features that read or write the game's memory ---------------------------
+# iw7_ship.exe (Steam) is protected by VAC. iw-helper does NOT try to hide from the
+# anti-cheat: any memory write on the Steam client can lead to a ban, even in solo.
+# While this option is false, the FPS limit and the trainer only work on iw7-mod.exe.
+# true here: the Steam client is used knowingly. Set it to false so that only the
+# processor fix applies to the Steam client.
+[memory]
+allow_steam_client = true
+
+# Sets the engine's internal FPS limit (91 frames per second by default in Zombies).
+# The engine counts a frame's length in whole milliseconds: 240 gives 250 in practice,
+# 200 gives 200, 144 gives 166. The setting's original bounds (0 to 100) are not applied.
+[fps]
+enabled = true
+limit = 240
+
+# Zombies trainer, for solo / private matches only (you must be the host).
+# Nothing is written while no option is on, nor if the game version is not recognised.
+[trainer]
+enabled = true
+# Game speed when the option is on (1.0 = normal).
+timescale = 0.5
+# Amount kept by "Infinite money".
+money = 100000
+# Confirmation beep on every action (high = on, low = off or refused).
+sound = true
+
+# Keyboard shortcuts, active while the game window is in front (high beep = on, low beep =
+# off or refused). Known keys: F1 to F24, Insert, Delete, Home, End, PageUp, PageDown, Pause,
+# ScrollLock, arrows (Up, Down, Left, Right), letters and digits, and the numeric keypad
+# (Num0 to Num9, NumDecimal, NumMultiply, NumDivide, NumAdd, NumSubtract).
+# An empty string removes the shortcut; the action stays available in the interface.
+[hotkeys]
+god_mode = "F1"
+infinite_ammo = "F2"
+one_hit_kill = "F3"
+infinite_money = "F4"
+noclip = "F5"
+no_target = "F6"
+slow_motion = "F7"
+no_recoil = "F8"
+rapid_fire = "F9"
+low_gravity = "F10"
+jump_pack = "F11"
+pause_zombies = ""
+# One-off actions: no key by default, always available in the interface.
+refill_ammo = ""
+add_money = ""
+weaken_zombies = ""
+end_round = ""
+charge_cards = ""
+add_tickets = ""
+save_position = "PageUp"
+teleport = "PageDown"
+all_off = "End"

@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "La fenêtre de l'outil n'appelle que les commandes d'iw-helper-gui lui-même.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

@@ -1,0 +1,45 @@
+[package]
+name = "iw-helper"
+version = "1.0.0"
+edition = "2021"
+description = "CPU fix, FPS limit unlock and Zombies trainer for Call of Duty: Infinite Warfare"
+license = "GPL-3.0-or-later"
+
+# The graphical interface (iw-helper-gui.exe, the one Steam starts) is a second package, in gui/:
+# a Tauri window whose pages are written in TypeScript. See build.ps1 to build everything.
+[workspace]
+members = [".", "gui/src-tauri"]
+default-members = ["."]
+resolver = "2"
+
+[lib]
+name = "iw_helper"
+path = "src/lib.rs"
+
+# Command line: info, verify, profile, and following the game without a window.
+[[bin]]
+name = "iw-helper"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+toml_edit = "0.22"
+
+[dependencies.windows-sys]
+version = "0.59"
+features = [
+    "Win32_Foundation",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Memory",
+    "Win32_System_Registry",
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+]
+
+[profile.release]
+opt-level = 2
+strip = true

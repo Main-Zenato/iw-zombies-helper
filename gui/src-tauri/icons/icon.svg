@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Un interrupteur allumé au-dessus d'une trace : l'icône de l'outil. -->
+  <rect width="512" height="512" rx="104" fill="#1c2229"/>
+  <rect x="96" y="120" width="320" height="152" rx="76" fill="#ffb627"/>
+  <circle cx="340" cy="196" r="50" fill="#1f1500"/>
+  <path d="M96 392 L176 392 L216 336 L264 420 L308 364 L416 364" fill="none" stroke="#3fc1b0" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
