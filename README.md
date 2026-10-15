@@ -102,7 +102,8 @@ folder of your choice (not inside the game folder). There are two zips, which di
 | `iw-helper-vX.Y.Z-steam-windows-x64.zip` | the Steam game (`iw7_ship.exe`) | `true` |
 | `iw-helper-vX.Y.Z-iw7-mod-windows-x64.zip` | [iw7-mod](https://github.com/auroramod/iw7-mod) | `false` |
 
-Each one holds `iw-helper-gui.exe`, `iw-helper.exe`, `iw-helper.toml`, this README and the license. Windows SmartScreen may warn about an
+Each one holds `iw-helper-gui.exe`, `iw-helper.exe`, `iw-helper.toml`, this README, the license and the
+uninstaller ([Uninstall](#uninstall)). Windows SmartScreen may warn about an
 unsigned program the first time: "More info" > "Run anyway".
 
 **From source:** with the game closed, from the project folder:
