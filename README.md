@@ -41,6 +41,7 @@ interface is available in **English** and **French** (Settings page).
 - [Logs and full survey](#logs-and-full-survey)
 - [Known limits](#known-limits)
 - [Troubleshooting](#troubleshooting)
+- [Uninstall](#uninstall)
 - [Development](#development)
 - [Credits and license](#credits-and-license)
 
@@ -295,6 +296,22 @@ since the previous one. Survey files are written in French and contain account d
 | The trainer does nothing on Steam | Check `allow_steam_client` and `trainer.enabled` in `iw-helper.toml`. |
 | The game crashed after leaving a match | Use Turn everything off before leaving: code patches are the usual cause. |
 | Shortcuts do nothing | They only work while the game window is in front. |
+
+## Uninstall
+
+Close the game and the tool, then double-click [uninstall.cmd](uninstall.cmd) in the tool's folder. It lists what
+it will delete and asks before doing anything:
+
+- the tool's files in its folder (programs, `iw-helper.toml`, README, license, `logs\`), then the folder if
+  nothing else is left in it;
+- the interface's data in `%LOCALAPPDATA%\fr.zen.iw-helper`;
+- if you say yes to a second question, the two Windows graphics settings the tool can apply to the game
+  (Settings page). Other options Windows keeps for the game are left as they are.
+
+Then, in Steam, clear the game's launch options, otherwise the game will not start. Changes made to your
+profile or account from the Lobby and Account pages stay: they are part of the game save.
+
+From a source checkout, the script only deletes `logs\` and the interface's data; the code is kept.
 
 ## Development
 
