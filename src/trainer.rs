@@ -753,10 +753,10 @@ impl OneShot {
         }
     }
 
-    /// True as long as the action has not been seen working on the real game. Pack-a-Punch, kill
-    /// all and bonuses were seen working from the iw7-mod console on 2026-10-16.
+    /// True as long as the action has not been seen working on the real game. The other iw7-mod
+    /// extras were seen working, from the console and from the window, on 2026-10-16.
     pub fn trial(self) -> bool {
-        matches!(self, OneShot::OpenDoors | OneShot::AllPerks | OneShot::BoxWeapon | OneShot::NextCharacter | OneShot::Revive | OneShot::ThirdPerson | OneShot::ExplosiveBullets)
+        matches!(self, OneShot::Revive | OneShot::ThirdPerson | OneShot::ExplosiveBullets)
     }
 
     /// Number of the command for the iw7-mod script, for the actions it carries out. Keep in step
