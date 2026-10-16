@@ -51,7 +51,8 @@ export function Match({ view, act }: Props) {
   const [round, setRound] = useState(10);
   const { playing, isOn, canToggle, toggle } = useToggles(view, act);
   const position = view.savedPosition;
-  const marked = [...view.groups.flatMap((group) => group.options), ...view.tweaks, ...view.actions.map((action) => ({ ...action, code: false }))];
+  const extras = view.modClient ? view.extras : [];
+  const marked = [...view.groups.flatMap((group) => group.options), ...view.tweaks, ...[...view.actions, ...extras].map((action) => ({ ...action, code: false }))];
 
   return (
     <>
@@ -117,6 +118,24 @@ export function Match({ view, act }: Props) {
           </button>
         </Row>
       </Section>
+
+      {extras.length > 0 && (
+        <Section
+          title={t("iw7-mod extras", "Extras iw7-mod")}
+          note={t(
+            "Carried out by the iw_helper.gsc script, which iw7-mod loads from its custom_scripts folder: see the README, iw7-mod extras.",
+            "Réalisés par le script iw_helper.gsc, qu'iw7-mod charge depuis son dossier custom_scripts : voir le README, iw7-mod extras.",
+          )}
+        >
+          {extras.map((action) => (
+            <Row key={action.key} label={action.label} hint={action.hint} trial={action.trial} off={!playing}>
+              <button type="button" className="btn" disabled={!playing} onClick={() => act(api.runAction(action.key))}>
+                {action.button}
+              </button>
+            </Row>
+          ))}
+        </Section>
+      )}
     </>
   );
 }

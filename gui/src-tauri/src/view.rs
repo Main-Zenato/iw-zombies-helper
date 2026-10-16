@@ -40,6 +40,10 @@ pub struct View {
     /// Numeric settings and one-off actions, valid during a match.
     pub tweaks: Vec<TweakRow>,
     pub actions: Vec<ActionRow>,
+    /// Actions carried out by the iw7-mod script: the pages only offer them on iw7-mod.
+    pub extras: Vec<ActionRow>,
+    /// The game is iw7-mod: script extras are offered, account actions are not.
+    pub mod_client: bool,
     pub keys: Keys,
     pub saved_position: Option<[f32; 3]>,
     /// Code of the character requested for the next match, when the profile is readable.
@@ -212,6 +216,14 @@ pub fn build(input: &Input) -> View {
         (None, None) => Message { text: guidance(config, snapshot), tone: "guide" },
     };
     let key = |action: &str| config.hotkey(action).map(key_label).unwrap_or_default();
+    let mod_client = snapshot.game.as_ref().is_some_and(|game| game.name.eq_ignore_ascii_case(config::MOD_CLIENT));
+    let action_rows = |by_script: bool| {
+        OneShot::ALL
+            .iter()
+            .filter(|action| action.script_code().is_some() == by_script)
+            .map(|&action| ActionRow { key: action.key(), label: action.label(), hint: action.hint(), button: action.button(), trial: action.trial() })
+            .collect()
+    };
     View {
         start_tab: input.start_tab.to_string(),
         language: lang::current().key(),
@@ -226,10 +238,9 @@ pub fn build(input: &Input) -> View {
             .map(|([en, fr], features)| Group { title: tr(en, fr), options: features.iter().map(|&feature| option(feature, snapshot, config)).collect() })
             .collect(),
         tweaks: Tweak::ALL.iter().map(|&tweak| tweak_row(tweak, snapshot)).collect(),
-        actions: OneShot::ALL
-            .iter()
-            .map(|&action| ActionRow { key: action.key(), label: action.label(), hint: action.hint(), button: action.button(), trial: action.trial() })
-            .collect(),
+        actions: action_rows(false),
+        extras: action_rows(true),
+        mod_client,
         keys: Keys { all_off: key(config::ACTION_ALL_OFF), save_position: key(config::ACTION_SAVE_POSITION), teleport: key(config::ACTION_TELEPORT) },
         saved_position: snapshot.saved_position,
         character: snapshot.character,
@@ -554,13 +565,14 @@ mod tests {
         let (config, cores, graphics, snapshot) = (Config::default(), [0b11], GraphicsSettings::default(), demo_snapshot());
         let view = build(&Input { snapshot: &snapshot, config: &config, cores: &cores, start_tab: "partie", accent: "#60cdff", notice: None, feedback: None, graphics: Some(&graphics), on_top: false, log_path: None });
         let json = serde_json::to_value(&view).unwrap();
-        let expected: [(&serde_json::Value, &[&str]); 13] = [
-            (&json, &["startTab", "language", "accent", "game", "state", "message", "ready", "profileReady", "groups", "tweaks", "actions", "keys", "savedPosition", "character", "characters", "hotkeys", "watching", "settings", "logPath"]),
+        let expected: [(&serde_json::Value, &[&str]); 14] = [
+            (&json, &["startTab", "language", "accent", "game", "state", "message", "ready", "profileReady", "groups", "tweaks", "actions", "extras", "modClient", "keys", "savedPosition", "character", "characters", "hotkeys", "watching", "settings", "logPath"]),
             (&json["message"], &["text", "tone"]),
             (&json["groups"][0], &["title", "options"]),
             (&json["groups"][0]["options"][0], &["key", "label", "hint", "hotkey", "on", "code", "trial"]),
             (&json["tweaks"][0], &["key", "label", "hint", "value", "min", "max", "step", "default", "unit", "code", "trial"]),
             (&json["actions"][0], &["key", "label", "hint", "button", "trial"]),
+            (&json["extras"][0], &["key", "label", "hint", "button", "trial"]),
             (&json["keys"], &["allOff", "savePosition", "teleport"]),
             (&json["characters"][0], &["code", "name", "map"]),
             (&json["hotkeys"][0], &["label", "key"]),
@@ -576,6 +588,19 @@ mod tests {
         // Values the pages compare or display as they are keep their type.
         assert!(json["tweaks"][0]["value"].is_number() && json["tweaks"][0]["trial"].is_boolean() && json["savedPosition"].is_array());
         assert!(json["logPath"].is_null() && json["character"].is_number());
+    }
+
+    #[test]
+    fn script_extras_are_kept_apart_and_offered_on_iw7_mod_only() {
+        let (config, cores, graphics) = (Config::default(), [0b11], GraphicsSettings::default());
+        let mut snapshot = demo_snapshot();
+        let view_of = |snapshot: &Snapshot| build(&Input { snapshot, config: &config, cores: &cores, start_tab: "partie", accent: "#60cdff", notice: None, feedback: None, graphics: Some(&graphics), on_top: false, log_path: None });
+        let steam = view_of(&snapshot);
+        assert!(!steam.mod_client);
+        assert!(steam.actions.iter().all(|row| row.key != "upgrade_weapons") && steam.extras.iter().any(|row| row.key == "upgrade_weapons"));
+        assert_eq!(steam.actions.len() + steam.extras.len(), OneShot::ALL.len());
+        snapshot.game.as_mut().unwrap().name = "IW7-MOD.exe".to_string();
+        assert!(view_of(&snapshot).mod_client);
     }
 
     #[test]

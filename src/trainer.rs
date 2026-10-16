@@ -11,6 +11,7 @@
 //! The game code is encrypted on disk, so nothing here can be checked offline. Instead, the
 //! trainer refuses to write until the running game's code matches `CODE_SITES`.
 
+use crate::config;
 use crate::lang::{self, tr, trs};
 use crate::process::Process;
 use crate::state::Pending;
@@ -133,6 +134,13 @@ const MAX_CURRENCY_NAME: u32 = 0xB48A;
 const CARD_METER_NAME: u32 = 0x4560;
 const CARD_METER_MAX_NAME: u32 = 0x4563;
 const TICKETS_NAME: u32 = 0xC206;
+/// `level.command_given`: the mailbox of the iw7-mod script (iw7-mod/custom_scripts/cp/iw_helper.gsc).
+/// A name from the public list that no Zombies script gives `level` (only zombie agents use it). The
+/// script keeps it at `SCRIPT_READY`, runs the command written as `SCRIPT_READY + code`, then puts
+/// it back.
+const SCRIPT_MAILBOX_NAME: u32 = 0x441A;
+const SCRIPT_READY: i32 = 7_700;
+const SANE_MAILBOX: std::ops::RangeInclusive<i32> = SCRIPT_READY..=SCRIPT_READY + 99;
 
 // --- Server-side players (`client_t`, 0xAEA98 bytes per player) ------------------------------
 /// `svs_clients`: pointer to the server's player array, allocated when the match starts.
@@ -592,6 +600,9 @@ impl Tweak {
 }
 
 /// A one-off action: a single write, nothing is kept up afterwards.
+///
+/// The actions with a `script_code` are carried out by the iw7-mod script
+/// (`iw7-mod/custom_scripts/cp/iw_helper.gsc`): the tool only writes the command into its mailbox.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OneShot {
     RefillAmmo,
@@ -600,10 +611,39 @@ pub enum OneShot {
     EndRound,
     ChargeCards,
     AddTickets,
+    UpgradeWeapons,
+    KillAll,
+    OpenDoors,
+    AllPerks,
+    BoxWeapon,
+    DropMaxAmmo,
+    DropNuke,
+    DropInstakill,
+    DropDoubleMoney,
+    DropFireSale,
+    DropInfiniteAmmo,
 }
 
 impl OneShot {
-    pub const ALL: [OneShot; 6] = [OneShot::RefillAmmo, OneShot::AddMoney, OneShot::WeakenZombies, OneShot::EndRound, OneShot::ChargeCards, OneShot::AddTickets];
+    pub const ALL: [OneShot; 17] = [
+        OneShot::RefillAmmo,
+        OneShot::AddMoney,
+        OneShot::WeakenZombies,
+        OneShot::EndRound,
+        OneShot::ChargeCards,
+        OneShot::AddTickets,
+        OneShot::UpgradeWeapons,
+        OneShot::KillAll,
+        OneShot::OpenDoors,
+        OneShot::AllPerks,
+        OneShot::BoxWeapon,
+        OneShot::DropMaxAmmo,
+        OneShot::DropNuke,
+        OneShot::DropInstakill,
+        OneShot::DropDoubleMoney,
+        OneShot::DropFireSale,
+        OneShot::DropInfiniteAmmo,
+    ];
 
     /// Name used by the interface and in the configuration (keyboard shortcuts).
     pub fn key(self) -> &'static str {
@@ -614,6 +654,17 @@ impl OneShot {
             OneShot::EndRound => "end_round",
             OneShot::ChargeCards => "charge_cards",
             OneShot::AddTickets => "add_tickets",
+            OneShot::UpgradeWeapons => "upgrade_weapons",
+            OneShot::KillAll => "kill_all",
+            OneShot::OpenDoors => "open_doors",
+            OneShot::AllPerks => "all_perks",
+            OneShot::BoxWeapon => "box_weapon",
+            OneShot::DropMaxAmmo => "drop_max_ammo",
+            OneShot::DropNuke => "drop_nuke",
+            OneShot::DropInstakill => "drop_instakill",
+            OneShot::DropDoubleMoney => "drop_double_money",
+            OneShot::DropFireSale => "drop_fire_sale",
+            OneShot::DropInfiniteAmmo => "drop_infinite_ammo",
         }
     }
 
@@ -625,6 +676,17 @@ impl OneShot {
             OneShot::EndRound => tr("End the round", "Finir la manche"),
             OneShot::ChargeCards => tr("Recharge Fate & Fortune cards", "Recharger les cartes Fate & Fortune"),
             OneShot::AddTickets => tr("Add 1,000 tickets", "Ajouter 1\u{a0}000 tickets"),
+            OneShot::UpgradeWeapons => "Pack-a-Punch",
+            OneShot::KillAll => tr("Kill every zombie", "Tuer tous les zombies"),
+            OneShot::OpenDoors => tr("Open doors and turn on power", "Ouvrir les portes et allumer le courant"),
+            OneShot::AllPerks => tr("All perks", "Tous les atouts"),
+            OneShot::BoxWeapon => tr("Mystery weapon", "Arme mystère"),
+            OneShot::DropMaxAmmo => tr("Max ammo bonus", "Bonus munitions max"),
+            OneShot::DropNuke => tr("Nuke bonus", "Bonus nuke"),
+            OneShot::DropInstakill => tr("Instakill bonus", "Bonus instakill"),
+            OneShot::DropDoubleMoney => tr("Double money bonus", "Bonus argent double"),
+            OneShot::DropFireSale => tr("Fire sale bonus", "Bonus soldes"),
+            OneShot::DropInfiniteAmmo => tr("Infinite ammo bonus", "Bonus munitions infinies"),
         }
     }
 
@@ -636,6 +698,14 @@ impl OneShot {
             OneShot::EndRound => tr("The round counts as won and the next one starts. Zombies still alive stay.", "La manche compte comme gagnée et la suivante commence. Les zombies encore là restent."),
             OneShot::ChargeCards => tr("The card meter fills up on your next money gain.", "La jauge des cartes se remplit au prochain gain d'argent."),
             OneShot::AddTickets => tr("Zombies in Spaceland arcade tickets. The counter catches up on your next ticket won.", "Tickets d'arcade de Zombies in Spaceland. Le compteur suit au prochain ticket gagné."),
+            OneShot::UpgradeWeapons => tr("Every player's weapons go up one level. Again for the next level.", "Les armes de tous les joueurs montent d'un niveau. Encore une fois pour le niveau suivant."),
+            OneShot::KillAll => tr("Every zombie alive, at once. Bosses may resist.", "Tous les zombies en vie, d'un coup. Les boss peuvent résister."),
+            OneShot::OpenDoors => tr("What the game's direct boss fight mode does: power, doors and paid passages.", "Ce que fait le mode combat de boss direct du jeu : courant, portes et passages payants."),
+            OneShot::AllPerks => tr("Every perk of this map, for you.", "Tous les atouts de cette carte, pour vous."),
+            OneShot::BoxWeapon => tr("A random weapon from this map's list, in place of the one in hand if you are full.", "Une arme au hasard dans la liste de la carte, à la place de celle en main si vous êtes plein."),
+            OneShot::DropMaxAmmo | OneShot::DropNuke | OneShot::DropInstakill | OneShot::DropDoubleMoney | OneShot::DropFireSale | OneShot::DropInfiniteAmmo => {
+                tr("Appears in front of you: walk into it. Not every map has every bonus.", "Apparaît devant vous : passez dessus. Toutes les cartes n'ont pas tous les bonus.")
+            }
         }
     }
 
@@ -643,18 +713,43 @@ impl OneShot {
     pub fn button(self) -> &'static str {
         match self {
             OneShot::RefillAmmo => tr("Refill", "Remplir"),
-            OneShot::AddMoney => tr("Add", "Ajouter"),
+            OneShot::AddMoney | OneShot::AddTickets => tr("Add", "Ajouter"),
             OneShot::WeakenZombies => tr("Weaken", "Affaiblir"),
             OneShot::EndRound => tr("End", "Finir"),
             OneShot::ChargeCards => tr("Recharge", "Recharger"),
-            OneShot::AddTickets => tr("Add", "Ajouter"),
+            OneShot::UpgradeWeapons => tr("Upgrade", "Améliorer"),
+            OneShot::KillAll => tr("Kill", "Tuer"),
+            OneShot::OpenDoors => tr("Open", "Ouvrir"),
+            OneShot::AllPerks | OneShot::BoxWeapon => tr("Get", "Obtenir"),
+            OneShot::DropMaxAmmo | OneShot::DropNuke | OneShot::DropInstakill | OneShot::DropDoubleMoney | OneShot::DropFireSale | OneShot::DropInfiniteAmmo => {
+                tr("Drop", "Faire apparaître")
+            }
         }
     }
 
-    /// True as long as the action has not been seen working on the real game: all of them have been
-    /// (end of round, cards and tickets on 2026-10-15).
+    /// True as long as the action has not been seen working on the real game. Pack-a-Punch, kill
+    /// all and bonuses were seen working from the iw7-mod console on 2026-10-16.
     pub fn trial(self) -> bool {
-        false
+        matches!(self, OneShot::OpenDoors | OneShot::AllPerks | OneShot::BoxWeapon)
+    }
+
+    /// Number of the command for the iw7-mod script, for the actions it carries out. Keep in step
+    /// with `run_command` in iw_helper.gsc.
+    pub fn script_code(self) -> Option<i32> {
+        Some(match self {
+            OneShot::UpgradeWeapons => 1,
+            OneShot::KillAll => 2,
+            OneShot::OpenDoors => 3,
+            OneShot::AllPerks => 4,
+            OneShot::BoxWeapon => 5,
+            OneShot::DropMaxAmmo => 10,
+            OneShot::DropNuke => 11,
+            OneShot::DropInstakill => 12,
+            OneShot::DropDoubleMoney => 13,
+            OneShot::DropFireSale => 14,
+            OneShot::DropInfiniteAmmo => 15,
+            _ => return None,
+        })
     }
 }
 
@@ -996,7 +1091,37 @@ impl Trainer {
                 }
                 Ok(format!("{} -> {total}", var.value))
             }
+            OneShot::UpgradeWeapons
+            | OneShot::KillAll
+            | OneShot::OpenDoors
+            | OneShot::AllPerks
+            | OneShot::BoxWeapon
+            | OneShot::DropMaxAmmo
+            | OneShot::DropNuke
+            | OneShot::DropInstakill
+            | OneShot::DropDoubleMoney
+            | OneShot::DropFireSale
+            | OneShot::DropInfiniteAmmo => self.send_to_script(p, action),
         }
+    }
+
+    /// Writes the action's command into the iw7-mod script's mailbox. Only on iw7-mod: the Steam game
+    /// never loads the script, and nothing is written to it for this.
+    fn send_to_script(&mut self, p: &Process, action: OneShot) -> Result<String, &'static str> {
+        let code = action.script_code().ok_or(tr("not a script command", "pas une commande du script"))?;
+        if !p.name.eq_ignore_ascii_case(config::MOD_CLIENT) {
+            return Err(tr("iw7-mod only", "iw7-mod uniquement"));
+        }
+        let (index, current) = self
+            .level_int(p, SCRIPT_MAILBOX_NAME, &SANE_MAILBOX)
+            .ok_or(tr("iw7-mod script not loaded, see the README", "script iw7-mod non chargé, voir le README"))?;
+        if current != SCRIPT_READY {
+            return Err(tr("the script is busy, try again", "le script est occupé, réessayez"));
+        }
+        if !write_child_int(p, index, SCRIPT_READY + code) {
+            return Err(tr("write refused", "écriture refusée"));
+        }
+        Ok(tr("sent to the script", "envoyé au script").to_string())
     }
 
     /// To call when the match ends: restores what does not belong to the match itself (engine

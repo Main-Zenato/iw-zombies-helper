@@ -42,9 +42,18 @@ function progress(): Entry[] {
 export function Account({ view, act, journal }: Props) {
   const [armed, setArmed] = useState(false);
   const lines = useJournal(journal);
-  const ready = view.profileReady;
+  // On iw7-mod, the account's progress is not the one from the official servers: nothing to do here.
+  const ready = view.profileReady && !view.modClient;
   return (
     <>
+      {view.modClient && (
+        <InfoBar tone="guide">
+          {t(
+            "Not available on iw7-mod: these actions are for the account of the Steam game.",
+            "Indisponible sur iw7-mod : ces actions concernent le compte du jeu Steam.",
+          )}
+        </InfoBar>
+      )}
       <InfoBar tone="notice">
         <b>{t("Permanent.", "Définitif.")}</b>{" "}
         {t(

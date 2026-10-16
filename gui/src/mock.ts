@@ -173,6 +173,41 @@ function makeView(language: Lang): View {
     },
   ];
 
+  // Carried out by the iw7-mod script (src/trainer.rs: `OneShot::script_code`).
+  const bonus = t("Appears in front of you: walk into it. Not every map has every bonus.", "Apparaît devant vous : passez dessus. Toutes les cartes n'ont pas tous les bonus.");
+  const drop = (key: string, label: string): Action => ({ key, label, hint: bonus, button: t("Drop", "Faire apparaître"), trial: false });
+  const extras: Action[] = [
+    {
+      key: "upgrade_weapons",
+      label: "Pack-a-Punch",
+      hint: t("Every player's weapons go up one level. Again for the next level.", "Les armes de tous les joueurs montent d'un niveau. Encore une fois pour le niveau suivant."),
+      button: t("Upgrade", "Améliorer"),
+      trial: false,
+    },
+    { key: "kill_all", label: t("Kill every zombie", "Tuer tous les zombies"), hint: t("Every zombie alive, at once. Bosses may resist.", "Tous les zombies en vie, d'un coup. Les boss peuvent résister."), button: t("Kill", "Tuer"), trial: false },
+    {
+      key: "open_doors",
+      label: t("Open doors and turn on power", "Ouvrir les portes et allumer le courant"),
+      hint: t("What the game's direct boss fight mode does: power, doors and paid passages.", "Ce que fait le mode combat de boss direct du jeu : courant, portes et passages payants."),
+      button: t("Open", "Ouvrir"),
+      trial: true,
+    },
+    { key: "all_perks", label: t("All perks", "Tous les atouts"), hint: t("Every perk of this map, for you.", "Tous les atouts de cette carte, pour vous."), button: t("Get", "Obtenir"), trial: true },
+    {
+      key: "box_weapon",
+      label: t("Mystery weapon", "Arme mystère"),
+      hint: t("A random weapon from this map's list, in place of the one in hand if you are full.", "Une arme au hasard dans la liste de la carte, à la place de celle en main si vous êtes plein."),
+      button: t("Get", "Obtenir"),
+      trial: true,
+    },
+    drop("drop_max_ammo", t("Max ammo bonus", "Bonus munitions max")),
+    drop("drop_nuke", t("Nuke bonus", "Bonus nuke")),
+    drop("drop_instakill", t("Instakill bonus", "Bonus instakill")),
+    drop("drop_double_money", t("Double money bonus", "Bonus argent double")),
+    drop("drop_fire_sale", t("Fire sale bonus", "Bonus soldes")),
+    drop("drop_infinite_ammo", t("Infinite ammo bonus", "Bonus munitions infinies")),
+  ];
+
   const keys = { allOff: t("End", "Fin"), savePosition: t("Page Up", "Page préc."), teleport: t("Page Down", "Page suiv.") };
   return {
     startTab: (params.get("tab") ?? "accueil") as TabId,
@@ -193,6 +228,9 @@ function makeView(language: Lang): View {
     groups,
     tweaks,
     actions,
+    extras,
+    // `?client=mod`: the game is iw7-mod.
+    modClient: game !== "absent" && params.get("client") === "mod",
     keys,
     savedPosition: playing ? [1204, -388, 64] : null,
     character: game === "absent" ? null : 0,
@@ -208,6 +246,7 @@ function makeView(language: Lang): View {
       ...groups.flatMap((group) => group.options).map((option) => ({ label: option.label, key: option.hotkey })),
       // One-off actions have no key until the configuration gives them one.
       ...actions.map((action) => ({ label: action.label, key: "" })),
+      ...extras.map((action) => ({ label: action.label, key: "" })),
       { label: t("Save position", "Enregistrer la position"), key: keys.savePosition },
       { label: t("Back to saved position", "Revenir à la position"), key: keys.teleport },
       { label: t("Turn everything off", "Tout désactiver"), key: keys.allOff },
@@ -290,7 +329,7 @@ export function respond(command: string, args: Record<string, unknown>): unknown
       return;
     }
     case "run_action": {
-      const action = view.actions.find((candidate) => candidate.key === args.key);
+      const action = [...view.actions, ...view.extras].find((candidate) => candidate.key === args.key);
       return action ? setMessage(t(`${action.label}: done`, `${action.label} : fait`), "done") : undefined;
     }
     case "survey":

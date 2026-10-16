@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 
 pub const FILE_NAME: &str = "iw-helper.toml";
 pub const STEAM_CLIENT: &str = "iw7_ship.exe";
+/// The community client: no VAC, and it loads the scripts of iw7-mod/custom_scripts.
+pub const MOD_CLIENT: &str = "iw7-mod.exe";
 
 /// Actions that are not toggles but also have a shortcut.
 pub const ACTION_ALL_OFF: &str = "all_off";
@@ -96,7 +98,7 @@ pub struct Trainer {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            process_names: vec![STEAM_CLIENT.into(), "iw7-mod.exe".into()],
+            process_names: vec![STEAM_CLIENT.into(), MOD_CLIENT.into()],
             cpu: Cpu::default(),
             memory: Memory::default(),
             fps: Fps::default(),
@@ -148,6 +150,18 @@ fn default_hotkeys() -> BTreeMap<String, String> {
         ("end_round", ""),
         ("charge_cards", ""),
         ("add_tickets", ""),
+        // Carried out by the iw7-mod script: iw7-mod only.
+        ("upgrade_weapons", ""),
+        ("kill_all", ""),
+        ("open_doors", ""),
+        ("all_perks", ""),
+        ("box_weapon", ""),
+        ("drop_max_ammo", ""),
+        ("drop_nuke", ""),
+        ("drop_instakill", ""),
+        ("drop_double_money", ""),
+        ("drop_fire_sale", ""),
+        ("drop_infinite_ammo", ""),
         (ACTION_SAVE_POSITION, "PageUp"),
         (ACTION_TELEPORT, "PageDown"),
         (ACTION_ALL_OFF, "End"),

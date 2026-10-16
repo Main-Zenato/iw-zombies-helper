@@ -224,6 +224,8 @@ These have no key by default and can get one in `[hotkeys]`:
 | Recharge Fate & Fortune cards (`charge_cards`) | The player's `consumable_meter` set to its maximum; the game sees it full on your next money gain |
 | Add 1,000 tickets (`add_tickets`) | The player's `num_tickets`, Zombies in Spaceland; the counter catches up on your next ticket won |
 
+The [iw7-mod extras](#iw7-mod-extras) can get keys the same way.
+
 Script fields are found by the public number of their name, like the round. The player's script object is
 the one that points to entity 0 and holds `maxcurrency`.
 
@@ -276,24 +278,34 @@ since the previous one. Survey files are written in French and contain account d
 
 **iw7-mod only.** [iw7-mod](https://github.com/auroramod/iw7-mod) loads game scripts (GSC) from its
 `custom_scripts` folder; the Steam game does not. [iw_helper.gsc](iw7-mod/custom_scripts/cp/iw_helper.gsc)
-uses this to call the game's own Zombies functions, which the tool cannot reach from memory. It is separate
-from the tool: it works without it, and the tool does not need it.
+uses this to call the game's own Zombies functions, which the tool cannot reach from memory.
 
-**Install:** copy the [iw7-mod](iw7-mod/) folder of this repository into the game folder, so that the file
-ends up in `<game folder>\iw7-mod\custom_scripts\cp\iw_helper.gsc`. It is compiled when a Zombies match
-loads. To remove it, delete that file.
+**Install:** copy the [iw7-mod](iw7-mod/) folder of this repository (also in the `iw7-mod` release zip) into
+the game folder, so that the file ends up in `<game folder>\iw7-mod\custom_scripts\cp\iw_helper.gsc`. It is
+compiled when a Zombies match loads. To remove it, delete that file.
 
-**Use**, as the host: open the iw7-mod console and type `set iwh <command>`, or bind a key once, for example
-`bind F5 "set iwh pap"`.
+**Use**, as the host, in either of two ways:
 
-| Command | Effect |
-| --- | --- |
-| `pap` | Upgrades every player's weapons one Pack-a-Punch level; again for the next level. |
-| `killall` | Kills every zombie alive (bosses may be immune). |
-| `drop <bonus>` | Drops a bonus in front of you: `ammo`, `kill`, `instakill`, `cash`, `upgrade`, `fire`, `infinite`, `grenade`, `power`, `board`, depending on the map. |
-| `bonuses` | Lists the bonuses of the current map. |
+- **From the window**: page **Match**, section **iw7-mod extras**, shown only when the game is
+  `iw7-mod.exe`. The tool writes the command's number into a script field, `level.command_given`, which the
+  script reads ten times a second; nothing is written there on the Steam game. Each one can get a key in
+  `[hotkeys]` (names in the table).
+- **From the iw7-mod console**: `set iwh <command>`, or bind a key once, for example `bind F5 "set iwh pap"`.
+  This works without the tool.
 
-Status: all four commands seen working in game.
+| Window (`[hotkeys]` name) | Console | Effect |
+| --- | --- | --- |
+| Pack-a-Punch (`upgrade_weapons`) | `pap` | Every player's weapons go up one Pack-a-Punch level; again for the next level. |
+| Kill every zombie (`kill_all`) | `killall` | Every zombie alive, at once (bosses may resist). |
+| Open doors and turn on power (`open_doors`), trial | `doors` | What the game's direct boss fight mode runs: the map's own way to turn on the power and open its doors. |
+| All perks (`all_perks`), trial | `perks` | Every perk the map has, given the way a perk machine does. |
+| Mystery weapon (`box_weapon`), trial | `weapon` | A random weapon from the map's list, in place of the one in hand if you carry the maximum. |
+| Max ammo, nuke, instakill, double money, fire sale, infinite ammo bonuses (`drop_max_ammo`, `drop_nuke`, `drop_instakill`, `drop_double_money`, `drop_fire_sale`, `drop_infinite_ammo`) | `drop ammo`, `drop kill`, `drop instakill`, `drop cash`, `drop fire`, `drop infinite` | The bonus appears in front of you: walk into it. Not every map has every bonus. |
+| | `bonuses` | Lists the bonuses of the current map. |
+
+Seen working in game, from the console: Pack-a-Punch, kill every zombie and bonuses. Not tried yet: doors,
+perks, mystery weapon, and anything sent from the window. On iw7-mod, the **Account** page is turned off: its
+actions are for the Steam game's account.
 
 ## Known limits
 

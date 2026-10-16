@@ -97,6 +97,10 @@ export interface View {
   /** Numeric settings and one-off actions; empty lists if the engine offers none. */
   tweaks: Tweak[];
   actions: Action[];
+  /** Actions carried out by the iw7-mod script: offered only when `modClient`. */
+  extras: Action[];
+  /** The game is iw7-mod: script extras are offered, account actions are not. */
+  modClient: boolean;
   keys: { allOff: string; savePosition: string; teleport: string };
   savedPosition: [number, number, number] | null;
   /** Code of the character requested for the next match, when the profile is readable. */
