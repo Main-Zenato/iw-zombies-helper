@@ -622,10 +622,11 @@ pub enum OneShot {
     DropDoubleMoney,
     DropFireSale,
     DropInfiniteAmmo,
+    NextCharacter,
 }
 
 impl OneShot {
-    pub const ALL: [OneShot; 17] = [
+    pub const ALL: [OneShot; 18] = [
         OneShot::RefillAmmo,
         OneShot::AddMoney,
         OneShot::WeakenZombies,
@@ -643,6 +644,7 @@ impl OneShot {
         OneShot::DropDoubleMoney,
         OneShot::DropFireSale,
         OneShot::DropInfiniteAmmo,
+        OneShot::NextCharacter,
     ];
 
     /// Name used by the interface and in the configuration (keyboard shortcuts).
@@ -665,6 +667,7 @@ impl OneShot {
             OneShot::DropDoubleMoney => "drop_double_money",
             OneShot::DropFireSale => "drop_fire_sale",
             OneShot::DropInfiniteAmmo => "drop_infinite_ammo",
+            OneShot::NextCharacter => "next_character",
         }
     }
 
@@ -687,6 +690,7 @@ impl OneShot {
             OneShot::DropDoubleMoney => tr("Double money bonus", "Bonus argent double"),
             OneShot::DropFireSale => tr("Fire sale bonus", "Bonus soldes"),
             OneShot::DropInfiniteAmmo => tr("Infinite ammo bonus", "Bonus munitions infinies"),
+            OneShot::NextCharacter => tr("Change character", "Changer de personnage"),
         }
     }
 
@@ -706,6 +710,10 @@ impl OneShot {
             OneShot::DropMaxAmmo | OneShot::DropNuke | OneShot::DropInstakill | OneShot::DropDoubleMoney | OneShot::DropFireSale | OneShot::DropInfiniteAmmo => {
                 tr("Appears in front of you: walk into it. Not every map has every bonus.", "Apparaît devant vous : passez dessus. Toutes les cartes n'ont pas tous les bonus.")
             }
+            OneShot::NextCharacter => tr(
+                "The next of this map's characters, hidden ones included (Hasselhoff, Wyler, Kevin Smith, Pam Grier). Other maps' characters are not loaded.",
+                "Le personnage suivant de cette carte, cachés compris (Hasselhoff, Wyler, Kevin Smith, Pam Grier). Ceux des autres cartes ne sont pas chargés.",
+            ),
         }
     }
 
@@ -720,6 +728,7 @@ impl OneShot {
             OneShot::UpgradeWeapons => tr("Upgrade", "Améliorer"),
             OneShot::KillAll => tr("Kill", "Tuer"),
             OneShot::OpenDoors => tr("Open", "Ouvrir"),
+            OneShot::NextCharacter => tr("Change", "Changer"),
             OneShot::AllPerks | OneShot::BoxWeapon => tr("Get", "Obtenir"),
             OneShot::DropMaxAmmo | OneShot::DropNuke | OneShot::DropInstakill | OneShot::DropDoubleMoney | OneShot::DropFireSale | OneShot::DropInfiniteAmmo => {
                 tr("Drop", "Faire apparaître")
@@ -730,7 +739,7 @@ impl OneShot {
     /// True as long as the action has not been seen working on the real game. Pack-a-Punch, kill
     /// all and bonuses were seen working from the iw7-mod console on 2026-10-16.
     pub fn trial(self) -> bool {
-        matches!(self, OneShot::OpenDoors | OneShot::AllPerks | OneShot::BoxWeapon)
+        matches!(self, OneShot::OpenDoors | OneShot::AllPerks | OneShot::BoxWeapon | OneShot::NextCharacter)
     }
 
     /// Number of the command for the iw7-mod script, for the actions it carries out. Keep in step
@@ -748,6 +757,7 @@ impl OneShot {
             OneShot::DropDoubleMoney => 13,
             OneShot::DropFireSale => 14,
             OneShot::DropInfiniteAmmo => 15,
+            OneShot::NextCharacter => 20,
             _ => return None,
         })
     }
@@ -1101,7 +1111,8 @@ impl Trainer {
             | OneShot::DropInstakill
             | OneShot::DropDoubleMoney
             | OneShot::DropFireSale
-            | OneShot::DropInfiniteAmmo => self.send_to_script(p, action),
+            | OneShot::DropInfiniteAmmo
+            | OneShot::NextCharacter => self.send_to_script(p, action),
         }
     }
 

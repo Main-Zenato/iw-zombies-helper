@@ -162,6 +162,7 @@ fn default_hotkeys() -> BTreeMap<String, String> {
         ("drop_double_money", ""),
         ("drop_fire_sale", ""),
         ("drop_infinite_ammo", ""),
+        ("next_character", ""),
         (ACTION_SAVE_POSITION, "PageUp"),
         (ACTION_TELEPORT, "PageDown"),
         (ACTION_ALL_OFF, "End"),

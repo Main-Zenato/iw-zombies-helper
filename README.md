@@ -300,11 +300,12 @@ compiled when a Zombies match loads. To remove it, delete that file.
 | Open doors and turn on power (`open_doors`), trial | `doors` | What the game's direct boss fight mode runs: the map's own way to turn on the power and open its doors. |
 | All perks (`all_perks`), trial | `perks` | Every perk the map has, given the way a perk machine does. |
 | Mystery weapon (`box_weapon`), trial | `weapon` | A random weapon from the map's list, in place of the one in hand if you carry the maximum. |
+| Change character (`next_character`), trial | `character` | The next of the map's characters, hidden ones included (Hasselhoff and Wyler on Spaceland, Kevin Smith on Rave, Pam Grier on Shaolin). Characters of another map are not possible: each map only loads its own. |
 | Max ammo, nuke, instakill, double money, fire sale, infinite ammo bonuses (`drop_max_ammo`, `drop_nuke`, `drop_instakill`, `drop_double_money`, `drop_fire_sale`, `drop_infinite_ammo`) | `drop ammo`, `drop kill`, `drop instakill`, `drop cash`, `drop fire`, `drop infinite` | The bonus appears in front of you: walk into it. Not every map has every bonus. |
 | | `bonuses` | Lists the bonuses of the current map. |
 
 Seen working in game, from the console: Pack-a-Punch, kill every zombie and bonuses. Not tried yet: doors,
-perks, mystery weapon, and anything sent from the window. On iw7-mod, the **Account** page is turned off: its
+perks, mystery weapon, character change, and anything sent from the window. On iw7-mod, the **Account** page is turned off: its
 actions are for the Steam game's account.
 
 ## Known limits

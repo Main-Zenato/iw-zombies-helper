@@ -206,6 +206,16 @@ function makeView(language: Lang): View {
     drop("drop_double_money", t("Double money bonus", "Bonus argent double")),
     drop("drop_fire_sale", t("Fire sale bonus", "Bonus soldes")),
     drop("drop_infinite_ammo", t("Infinite ammo bonus", "Bonus munitions infinies")),
+    {
+      key: "next_character",
+      label: t("Change character", "Changer de personnage"),
+      hint: t(
+        "The next of this map's characters, hidden ones included (Hasselhoff, Wyler, Kevin Smith, Pam Grier). Other maps' characters are not loaded.",
+        "Le personnage suivant de cette carte, cachés compris (Hasselhoff, Wyler, Kevin Smith, Pam Grier). Ceux des autres cartes ne sont pas chargés.",
+      ),
+      button: t("Change", "Changer"),
+      trial: true,
+    },
   ];
 
   const keys = { allOff: t("End", "Fin"), savePosition: t("Page Up", "Page préc."), teleport: t("Page Down", "Page suiv.") };

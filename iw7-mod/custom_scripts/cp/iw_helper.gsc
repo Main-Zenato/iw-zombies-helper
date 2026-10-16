@@ -16,6 +16,7 @@
 //   doors          turn on the power and open the doors
 //   perks          give you every perk of the map
 //   weapon         give you a random weapon from the map's list
+//   character      switch to the next of the map's characters, hidden ones included
 //   drop <bonus>   drop a bonus in front of you: ammo, kill, instakill, cash, upgrade, fire, infinite,
 //                  grenade, power, board (what exists depends on the map)
 //   bonuses        list the bonuses of this map
@@ -79,6 +80,7 @@ run_code(player, code)
         case 13: drop_bonus(player, "cash"); break;
         case 14: drop_bonus(player, "fire"); break;
         case 15: drop_bonus(player, "infinite"); break;
+        case 20: next_character(player); break;
         default: player iprintln("iw-helper: unknown command " + code); break;
     }
 }
@@ -93,9 +95,10 @@ run_word(player, command, argument)
         case "doors": open_doors(player); break;
         case "perks": give_perks(player); break;
         case "weapon": give_weapon(player); break;
+        case "character": next_character(player); break;
         case "drop": drop_bonus(player, argument); break;
         case "bonuses": list_bonuses(player); break;
-        default: player iprintln("iw-helper: pap, killall, doors, perks, weapon, drop <bonus>, bonuses"); break;
+        default: player iprintln("iw-helper: pap, killall, doors, perks, weapon, character, drop <bonus>, bonuses"); break;
     }
 }
 
@@ -195,6 +198,37 @@ give_weapon(player)
     player notify("weapon_level_changed");
     player switchtoweapon(given);
     player iprintln("iw-helper: weapon given (" + given + ")");
+}
+
+// The map registers its characters by number (1 to 4, then its hidden ones: 5 and 6 on Spaceland,
+// 5 on Rave and Shaolin), and only loads their models. The player's photo index is their number
+// minus one. The next number up is applied the way the match start does, wrapping around.
+next_character(player)
+{
+    if (!isdefined(level.player_character_info) || !isdefined(player.player_character_index))
+    {
+        player iprintln("iw-helper: characters not ready yet");
+        return;
+    }
+
+    numbers = getarraykeys(level.player_character_info);
+    current = player.player_character_index + 1;
+    target = undefined;
+    lowest = undefined;
+
+    foreach (number in numbers)
+    {
+        if (number > current && (!isdefined(target) || number < target))
+            target = number;
+        if (!isdefined(lowest) || number < lowest)
+            lowest = number;
+    }
+
+    if (!isdefined(target))
+        target = lowest;
+
+    player thread scripts\cp\zombies\zombies_loadout::setmodelfromcustomization(target);
+    player iprintln("iw-helper: character " + target);
 }
 
 // Bonuses are named after the map's loot table, such as "kill_50" or "ammo_max": the first one whose
