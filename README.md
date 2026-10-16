@@ -39,6 +39,7 @@ interface is available in **English** and **French** (Settings page).
 - [Configuration](#configuration)
 - [Command line](#command-line)
 - [Logs and full survey](#logs-and-full-survey)
+- [iw7-mod extras](#iw7-mod-extras)
 - [Known limits](#known-limits)
 - [Troubleshooting](#troubleshooting)
 - [Uninstall](#uninstall)
@@ -271,6 +272,29 @@ suits, weapons and attachments, script fields, player and zombies. The game is o
 nothing is changed. From the interface, a second survey taken in the same state starts with what changed
 since the previous one. Survey files are written in French and contain account data; keep them to yourself.
 
+## iw7-mod extras
+
+**iw7-mod only.** [iw7-mod](https://github.com/auroramod/iw7-mod) loads game scripts (GSC) from its
+`custom_scripts` folder; the Steam game does not. [iw_helper.gsc](iw7-mod/custom_scripts/cp/iw_helper.gsc)
+uses this to call the game's own Zombies functions, which the tool cannot reach from memory. It is separate
+from the tool: it works without it, and the tool does not need it.
+
+**Install:** copy the [iw7-mod](iw7-mod/) folder of this repository into the game folder, so that the file
+ends up in `<game folder>\iw7-mod\custom_scripts\cp\iw_helper.gsc`. It is compiled when a Zombies match
+loads. To remove it, delete that file.
+
+**Use**, as the host: open the iw7-mod console and type `set iwh <command>`, or bind a key once, for example
+`bind F5 "set iwh pap"`.
+
+| Command | Effect |
+| --- | --- |
+| `pap` | Upgrades every player's weapons one Pack-a-Punch level; again for the next level. |
+| `killall` | Kills every zombie alive (bosses may be immune). |
+| `drop <bonus>` | Drops a bonus in front of you: `ammo`, `kill`, `instakill`, `cash`, `upgrade`, `fire`, `infinite`, `grenade`, `power`, `board`, depending on the map. |
+| `bonuses` | Lists the bonuses of the current map. |
+
+Status: all four commands seen working in game.
+
 ## Known limits
 
 - **One game version**: Steam build 2715288. On any other, nothing is written.
@@ -282,7 +306,8 @@ since the previous one. Survey files are written in French and contain account d
   belongs to the multiplayer HUD that Zombies does not have.
 - **Out of reach**: a map's easter egg (its steps wait for game events that no written value triggers),
   quest parts (objects to pick up), Pack-a-Punch on the held weapon (the held weapon is decided on the client
-  side, at a place not found), and characters from another map (each map only loads its own).
+  side, at a place not found), and characters from another map (each map only loads its own). On iw7-mod,
+  Pack-a-Punch and bonuses are possible through a script: see [iw7-mod extras](#iw7-mod-extras).
 - **Restoring leftovers on startup**: not yet tried in game.
 - **CPU settings**: removing sibling threads is the most often reported stutter fix, but its effect depends
   on the machine. Compare with and without on yours.
