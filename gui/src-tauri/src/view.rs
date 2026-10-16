@@ -140,6 +140,8 @@ pub struct Settings {
     pub fps: FpsSettings,
     pub windows: Option<WindowsSettings>,
     pub on_top: bool,
+    /// Confirmation sound on actions and shortcuts.
+    pub sound: bool,
 }
 
 #[derive(Serialize)]
@@ -344,6 +346,7 @@ fn settings(input: &Input) -> Settings {
             .graphics
             .map(|graphics| WindowsSettings { dedicated_gpu: graphics.dedicated_gpu, windowed_optimizations_off: graphics.windowed_optimizations_off }),
         on_top: input.on_top,
+        sound: config.trainer.sound,
     }
 }
 
@@ -576,7 +579,7 @@ mod tests {
             (&json["keys"], &["allOff", "savePosition", "teleport"]),
             (&json["characters"][0], &["code", "name", "map"]),
             (&json["hotkeys"][0], &["label", "key"]),
-            (&json["settings"], &["cpu", "fps", "windows", "onTop"]),
+            (&json["settings"], &["cpu", "fps", "windows", "onTop", "sound"]),
             (&json["settings"]["cpu"], &["enabled", "smt", "cores", "coreCount", "priority", "priorities", "outcome", "threads", "totalThreads"]),
             (&json["settings"]["fps"], &["enabled", "limit", "effective"]),
             (&json["settings"]["windows"], &["dedicatedGpu", "windowedOptimizationsOff"]),

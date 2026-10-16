@@ -52,10 +52,10 @@ enabled = true
 timescale = 0.5
 # Amount kept by "Infinite money".
 money = 100000
-# Confirmation beep on every action (high = on, low = off or refused).
+# Soft confirmation chime on every action (rising = on, falling = off or refused).
 sound = true
 
-# Keyboard shortcuts, active while the game window is in front (high beep = on, low beep =
+# Keyboard shortcuts, active while the game window is in front (rising chime = on, falling =
 # off or refused). Known keys: F1 to F24, Insert, Delete, Home, End, PageUp, PageDown, Pause,
 # ScrollLock, arrows (Up, Down, Left, Right), letters and digits, and the numeric keypad
 # (Num0 to Num9, NumDecimal, NumMultiply, NumDivide, NumAdd, NumSubtract).
@@ -93,6 +93,9 @@ drop_double_money = ""
 drop_fire_sale = ""
 drop_infinite_ammo = ""
 next_character = ""
+revive = ""
+third_person = ""
+explosive_bullets = ""
 save_position = "PageUp"
 teleport = "PageDown"
 all_off = "End"

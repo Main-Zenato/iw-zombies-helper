@@ -46,6 +46,8 @@ pub enum Command {
     /// Starts or stops watching the player's structures (research).
     SetWatch(bool),
     SetFps { enabled: bool, limit: i32 },
+    /// Turns the confirmation sound on or off, from now on.
+    SetSound(bool),
     Verify,
     Profile(profile::Action),
 }
@@ -287,6 +289,7 @@ impl Worker {
                 self.config.fps.enabled = enabled;
                 self.config.fps.limit = limit;
             }
+            Ok(Command::SetSound(on)) => self.config.trainer.sound = on,
             Ok(_) => self.log.line(tr("The game is not running.", "Le jeu n'est pas lancé.")),
             Err(RecvTimeoutError::Timeout) => {}
             Err(RecvTimeoutError::Disconnected) => sleep(SEARCH_INTERVAL),
@@ -513,6 +516,7 @@ impl Worker {
                 }
             }
             Command::Profile(action) => self.edit_profile(s, action),
+            Command::SetSound(on) => self.config.trainer.sound = on,
         }
     }
 

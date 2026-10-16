@@ -17,6 +17,9 @@
 //   perks          give you every perk of the map
 //   weapon         give you a random weapon from the map's list
 //   character      switch to the next of the map's characters, hidden ones included
+//   revive         get every downed player back up, from last stand or the afterlife arcade
+//   thirdperson    switch between first and third-person view
+//   explosive      switch explosive bullets on or off: each shot explodes where it lands
 //   drop <bonus>   drop a bonus in front of you: ammo, kill, instakill, cash, upgrade, fire, infinite,
 //                  grenade, power, board (what exists depends on the map)
 //   bonuses        list the bonuses of this map
@@ -27,6 +30,8 @@
 init()
 {
     setdvarifuninitialized("iwh", "");
+    // Explosive bullets start off at every match.
+    setdvar("iwh_explosive", 0);
     level.command_given = 7700;
     level thread watch_commands();
 }
@@ -81,6 +86,9 @@ run_code(player, code)
         case 14: drop_bonus(player, "fire"); break;
         case 15: drop_bonus(player, "infinite"); break;
         case 20: next_character(player); break;
+        case 21: revive_players(player); break;
+        case 22: switch_third_person(player); break;
+        case 23: switch_explosive_bullets(player); break;
         default: player iprintln("iw-helper: unknown command " + code); break;
     }
 }
@@ -96,9 +104,12 @@ run_word(player, command, argument)
         case "perks": give_perks(player); break;
         case "weapon": give_weapon(player); break;
         case "character": next_character(player); break;
+        case "revive": revive_players(player); break;
+        case "thirdperson": switch_third_person(player); break;
+        case "explosive": switch_explosive_bullets(player); break;
         case "drop": drop_bonus(player, argument); break;
         case "bonuses": list_bonuses(player); break;
-        default: player iprintln("iw-helper: pap, killall, doors, perks, weapon, character, drop <bonus>, bonuses"); break;
+        default: player iprintln("iw-helper: pap, killall, doors, perks, weapon, character, revive, thirdperson, explosive, drop <bonus>, bonuses"); break;
     }
 }
 
@@ -229,6 +240,80 @@ next_character(player)
 
     player thread scripts\cp\zombies\zombies_loadout::setmodelfromcustomization(target);
     player iprintln("iw-helper: character " + target);
+}
+
+// Every player down, in last stand or in the afterlife arcade, gets back up the way a revive does.
+revive_players(player)
+{
+    count = 0;
+    foreach (other in level.players)
+    {
+        if (!scripts\engine\utility::istrue(scripts\cp\cp_laststand::player_in_laststand(other)) && !scripts\cp\zombies\zombie_afterlife_arcade::is_in_afterlife_arcade(other))
+            continue;
+
+        other scripts\cp\cp_laststand::instant_revive(other);
+        count++;
+    }
+
+    player iprintln("iw-helper: " + count + " players revived");
+}
+
+// cg_thirdPerson is iw7-mod's own setting; the host's game is also the server, so the script can set it.
+switch_third_person(player)
+{
+    if (getdvarint("cg_thirdPerson") == 1)
+    {
+        setdvar("cg_thirdPerson", 0);
+        player iprintln("iw-helper: first-person view");
+    }
+    else
+    {
+        setdvar("cg_thirdPerson", 1);
+        player iprintln("iw-helper: third-person view");
+    }
+}
+
+// The state is kept in a console variable, iwh_explosive, so the script needs no field of its own.
+switch_explosive_bullets(player)
+{
+    if (getdvarint("iwh_explosive") == 1)
+    {
+        setdvar("iwh_explosive", 0);
+        player notify("iwh_explosive_stop");
+        player iprintln("iw-helper: explosive bullets off");
+        return;
+    }
+
+    setdvar("iwh_explosive", 1);
+    player thread explosive_bullets();
+    player iprintln("iw-helper: explosive bullets on");
+}
+
+// Each shot explodes where it lands: the effect of the game's big equipment explosion, and damage
+// around that point. Not near the player, who would be hurt.
+explosive_bullets()
+{
+    self endon("disconnect");
+    self endon("iwh_explosive_stop");
+    level endon("game_ended");
+
+    for (;;)
+    {
+        self waittill("weapon_fired");
+
+        start = self geteye();
+        end = start + anglestoforward(self getplayerangles()) * 5000;
+        trace = bullettrace(start, end, 0, self);
+        spot = trace["position"];
+
+        if (distance(spot, self.origin) < 200)
+            continue;
+
+        if (isdefined(level._effect["equipment_explode_big"]))
+            playfx(level._effect["equipment_explode_big"], spot);
+
+        radiusdamage(spot, 160, 800, 150, self, "MOD_EXPLOSIVE");
+    }
 }
 
 // Bonuses are named after the map's loot table, such as "kill_50" or "ammo_max": the first one whose

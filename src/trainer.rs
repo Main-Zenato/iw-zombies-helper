@@ -15,7 +15,7 @@ use crate::config;
 use crate::lang::{self, tr, trs};
 use crate::process::Process;
 use crate::state::Pending;
-use windows_sys::Win32::System::Diagnostics::Debug::Beep;
+use windows_sys::Win32::Media::Audio::{PlaySoundW, SND_ASYNC, SND_MEMORY, SND_NODEFAULT};
 
 pub(crate) const BASE: usize = 0x1_4000_0000;
 pub(crate) const IMAGE_END: usize = BASE + 0xC30_1400;
@@ -623,10 +623,13 @@ pub enum OneShot {
     DropFireSale,
     DropInfiniteAmmo,
     NextCharacter,
+    Revive,
+    ThirdPerson,
+    ExplosiveBullets,
 }
 
 impl OneShot {
-    pub const ALL: [OneShot; 18] = [
+    pub const ALL: [OneShot; 21] = [
         OneShot::RefillAmmo,
         OneShot::AddMoney,
         OneShot::WeakenZombies,
@@ -645,6 +648,9 @@ impl OneShot {
         OneShot::DropFireSale,
         OneShot::DropInfiniteAmmo,
         OneShot::NextCharacter,
+        OneShot::Revive,
+        OneShot::ThirdPerson,
+        OneShot::ExplosiveBullets,
     ];
 
     /// Name used by the interface and in the configuration (keyboard shortcuts).
@@ -668,6 +674,9 @@ impl OneShot {
             OneShot::DropFireSale => "drop_fire_sale",
             OneShot::DropInfiniteAmmo => "drop_infinite_ammo",
             OneShot::NextCharacter => "next_character",
+            OneShot::Revive => "revive",
+            OneShot::ThirdPerson => "third_person",
+            OneShot::ExplosiveBullets => "explosive_bullets",
         }
     }
 
@@ -691,6 +700,9 @@ impl OneShot {
             OneShot::DropFireSale => tr("Fire sale bonus", "Bonus soldes"),
             OneShot::DropInfiniteAmmo => tr("Infinite ammo bonus", "Bonus munitions infinies"),
             OneShot::NextCharacter => tr("Change character", "Changer de personnage"),
+            OneShot::Revive => tr("Revive", "Se relever"),
+            OneShot::ThirdPerson => tr("Third-person view", "Vue à la troisième personne"),
+            OneShot::ExplosiveBullets => tr("Explosive bullets", "Balles explosives"),
         }
     }
 
@@ -714,6 +726,9 @@ impl OneShot {
                 "The next of this map's characters, hidden ones included (Hasselhoff, Wyler, Kevin Smith, Pam Grier). Other maps' characters are not loaded.",
                 "Le personnage suivant de cette carte, cachés compris (Hasselhoff, Wyler, Kevin Smith, Pam Grier). Ceux des autres cartes ne sont pas chargés.",
             ),
+            OneShot::Revive => tr("Every player down gets back up, from last stand or the afterlife arcade.", "Tout joueur à terre se relève, en dernier recours ou depuis l'arcade de l'au-delà."),
+            OneShot::ThirdPerson => tr("Switches between first and third-person view.", "Passe de la vue à la première personne à la troisième, et inversement."),
+            OneShot::ExplosiveBullets => tr("Switches on or off: each shot explodes where it lands, away from you.", "S'active ou se coupe : chaque tir explose là où il touche, loin de vous."),
         }
     }
 
@@ -729,6 +744,8 @@ impl OneShot {
             OneShot::KillAll => tr("Kill", "Tuer"),
             OneShot::OpenDoors => tr("Open", "Ouvrir"),
             OneShot::NextCharacter => tr("Change", "Changer"),
+            OneShot::Revive => tr("Revive", "Relever"),
+            OneShot::ThirdPerson | OneShot::ExplosiveBullets => tr("Switch", "Basculer"),
             OneShot::AllPerks | OneShot::BoxWeapon => tr("Get", "Obtenir"),
             OneShot::DropMaxAmmo | OneShot::DropNuke | OneShot::DropInstakill | OneShot::DropDoubleMoney | OneShot::DropFireSale | OneShot::DropInfiniteAmmo => {
                 tr("Drop", "Faire apparaître")
@@ -739,7 +756,7 @@ impl OneShot {
     /// True as long as the action has not been seen working on the real game. Pack-a-Punch, kill
     /// all and bonuses were seen working from the iw7-mod console on 2026-10-16.
     pub fn trial(self) -> bool {
-        matches!(self, OneShot::OpenDoors | OneShot::AllPerks | OneShot::BoxWeapon | OneShot::NextCharacter)
+        matches!(self, OneShot::OpenDoors | OneShot::AllPerks | OneShot::BoxWeapon | OneShot::NextCharacter | OneShot::Revive | OneShot::ThirdPerson | OneShot::ExplosiveBullets)
     }
 
     /// Number of the command for the iw7-mod script, for the actions it carries out. Keep in step
@@ -758,6 +775,9 @@ impl OneShot {
             OneShot::DropFireSale => 14,
             OneShot::DropInfiniteAmmo => 15,
             OneShot::NextCharacter => 20,
+            OneShot::Revive => 21,
+            OneShot::ThirdPerson => 22,
+            OneShot::ExplosiveBullets => 23,
             _ => return None,
         })
     }
@@ -1112,7 +1132,10 @@ impl Trainer {
             | OneShot::DropDoubleMoney
             | OneShot::DropFireSale
             | OneShot::DropInfiniteAmmo
-            | OneShot::NextCharacter => self.send_to_script(p, action),
+            | OneShot::NextCharacter
+            | OneShot::Revive
+            | OneShot::ThirdPerson
+            | OneShot::ExplosiveBullets => self.send_to_script(p, action),
         }
     }
 
@@ -1763,9 +1786,54 @@ fn write_position(p: &Process, position: [f32; 3]) -> bool {
     p.write_bytes(HOST_CLIENT + CLIENT_ORIGIN, &bytes).is_ok()
 }
 
-/// High beep for "on", low for "off" or "refused": the only feedback possible in fullscreen.
+/// A soft two-note chime, rising for "on", falling for "off" or "refused": the only feedback
+/// possible in fullscreen. Made once, played without waiting, at a low volume.
 pub fn beep(on: bool) {
-    unsafe { Beep(if on { 1200 } else { 500 }, 90) };
+    static CHIMES: std::sync::OnceLock<[Vec<u8>; 2]> = std::sync::OnceLock::new();
+    // E5 then B5, and D5 then G4.
+    let chimes = CHIMES.get_or_init(|| [chime(&[659.25, 987.77]), chime(&[587.33, 392.0])]);
+    let wav = &chimes[if on { 0 } else { 1 }];
+    unsafe { PlaySoundW(wav.as_ptr().cast(), std::ptr::null_mut(), SND_MEMORY | SND_ASYNC | SND_NODEFAULT) };
+}
+
+const CHIME_RATE: u32 = 44_100;
+const CHIME_NOTE_MS: usize = 70;
+const CHIME_VOLUME: f32 = 0.2;
+
+/// A WAV file in memory, 16-bit mono: one short note per frequency, with a soft attack, a fading
+/// tail and a short release so that nothing clicks.
+fn chime(notes: &[f32]) -> Vec<u8> {
+    let rate = CHIME_RATE as f32;
+    let length = CHIME_RATE as usize * CHIME_NOTE_MS / 1000;
+    let samples: Vec<i16> = notes
+        .iter()
+        .flat_map(|&frequency| {
+            (0..length).map(move |i| {
+                let t = i as f32 / rate;
+                let attack = (t / 0.004).min(1.0);
+                let release = ((length - i) as f32 / (rate * 0.012)).min(1.0);
+                let tone = (std::f32::consts::TAU * frequency * t).sin() * 0.8 + (2.0 * std::f32::consts::TAU * frequency * t).sin() * 0.2;
+                (tone * attack * release * (-t * 28.0).exp() * CHIME_VOLUME * i16::MAX as f32) as i16
+            })
+        })
+        .collect();
+    let data_len = (samples.len() * 2) as u32;
+    let mut wav = Vec::with_capacity(44 + data_len as usize);
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&(36 + data_len).to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    wav.extend_from_slice(&16u32.to_le_bytes());
+    // PCM, one channel, the rate, bytes per second, bytes per sample, bits per sample.
+    wav.extend_from_slice(&1u16.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes());
+    wav.extend_from_slice(&CHIME_RATE.to_le_bytes());
+    wav.extend_from_slice(&(CHIME_RATE * 2).to_le_bytes());
+    wav.extend_from_slice(&2u16.to_le_bytes());
+    wav.extend_from_slice(&16u16.to_le_bytes());
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&data_len.to_le_bytes());
+    wav.extend(samples.iter().flat_map(|sample| sample.to_le_bytes()));
+    wav
 }
 
 // --- Read-only check --------------------------------------------------------------------------
@@ -2056,6 +2124,17 @@ mod tests {
 
     fn this_process() -> Process {
         Process::open(std::process::id(), "self".into(), Access::Memory).unwrap()
+    }
+
+    #[test]
+    fn the_chime_is_a_quiet_wav_of_two_short_notes() {
+        let wav = chime(&[659.25, 987.77]);
+        let samples = 2 * CHIME_RATE as usize * CHIME_NOTE_MS / 1000;
+        assert_eq!((&wav[..4], &wav[8..16], &wav[36..40]), (&b"RIFF"[..], &b"WAVEfmt "[..], &b"data"[..]));
+        assert_eq!(wav.len(), 44 + samples * 2);
+        assert_eq!(u32::from_le_bytes(wav[4..8].try_into().unwrap()) as usize, wav.len() - 8);
+        let loudest = wav[44..].chunks(2).map(|pair| i16::from_le_bytes([pair[0], pair[1]]).unsigned_abs()).max().unwrap();
+        assert!(loudest > 1000 && (loudest as f32) <= CHIME_VOLUME * i16::MAX as f32 + 1.0);
     }
 
     #[test]

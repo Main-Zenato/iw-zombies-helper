@@ -25,7 +25,7 @@ function State({ ok, done, todo }: { ok: boolean; done: string; todo: string }) 
 }
 
 export function Settings({ view, act }: Props) {
-  const { cpu, fps, windows, onTop } = view.settings;
+  const { cpu, fps, windows, onTop, sound } = view.settings;
   return (
     <>
       <Section title={t("Language", "Langue")}>
@@ -125,6 +125,12 @@ export function Settings({ view, act }: Props) {
           hint={t("Stays above the game when it runs in borderless window.", "Reste au-dessus du jeu s'il tourne en fenêtré sans bordure.")}
           on={onTop}
           onChange={(on) => act(api.setOnTop(on))}
+        />
+        <ToggleRow
+          label={t("Confirmation sound", "Son de confirmation")}
+          hint={t("A soft chime on every action and shortcut: rising when on, falling when off or refused.", "Un léger carillon à chaque action et raccourci : montant à l'activation, descendant à l'arrêt ou au refus.")}
+          on={sound}
+          onChange={(on) => act(api.setSound(on))}
         />
       </Section>
 

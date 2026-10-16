@@ -183,7 +183,8 @@ only; the game then goes back to the normal draw.
 
 ## Keyboard shortcuts
 
-Active while the game window is in front. A high beep means "on", a low beep "off" or "refused". None of
+Active while the game window is in front. A soft rising chime means "on", a falling one "off" or "refused" (Settings,
+Confirmation sound, to turn it off). None of
 them is on the numeric keypad, and everything is also available from the interface.
 
 | Key | Action | How |
@@ -244,7 +245,7 @@ it offers by itself; the rest is changed by hand, then takes effect when the gam
 | `[cpu]` | CPU fix: one thread per physical core or not (`smt`), number of cores, priority. |
 | `[memory]` | `allow_steam_client`: allows memory features on the Steam client. |
 | `[fps]` | FPS limit. The engine counts a frame in whole milliseconds: 240 requested gives 250 in practice, 144 gives 166. |
-| `[trainer]` | Zombies options: target game speed, infinite money amount, beeps. |
+| `[trainer]` | Zombies options: target game speed, infinite money amount, confirmation sound. |
 | `[hotkeys]` | One key per action; an empty string removes the shortcut. |
 
 An unknown key makes the tool refuse the file with a message: the interface then runs with default settings, the command line stops.
@@ -301,6 +302,9 @@ compiled when a Zombies match loads. To remove it, delete that file.
 | All perks (`all_perks`), trial | `perks` | Every perk the map has, given the way a perk machine does. |
 | Mystery weapon (`box_weapon`), trial | `weapon` | A random weapon from the map's list, in place of the one in hand if you carry the maximum. |
 | Change character (`next_character`), trial | `character` | The next of the map's characters, hidden ones included (Hasselhoff and Wyler on Spaceland, Kevin Smith on Rave, Pam Grier on Shaolin). Characters of another map are not possible: each map only loads its own. |
+| Revive (`revive`), trial | `revive` | Every player down gets back up, from last stand or the afterlife arcade. |
+| Third-person view (`third_person`), trial | `thirdperson` | Switches between first and third-person view (iw7-mod's `cg_thirdPerson`). |
+| Explosive bullets (`explosive_bullets`), trial | `explosive` | Switches on or off: each shot explodes where it lands, never right next to you. Off again at every match. |
 | Max ammo, nuke, instakill, double money, fire sale, infinite ammo bonuses (`drop_max_ammo`, `drop_nuke`, `drop_instakill`, `drop_double_money`, `drop_fire_sale`, `drop_infinite_ammo`) | `drop ammo`, `drop kill`, `drop instakill`, `drop cash`, `drop fire`, `drop infinite` | The bonus appears in front of you: walk into it. Not every map has every bonus. |
 | | `bonuses` | Lists the bonuses of the current map. |
 

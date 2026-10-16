@@ -216,6 +216,27 @@ function makeView(language: Lang): View {
       button: t("Change", "Changer"),
       trial: true,
     },
+    {
+      key: "revive",
+      label: t("Revive", "Se relever"),
+      hint: t("Every player down gets back up, from last stand or the afterlife arcade.", "Tout joueur à terre se relève, en dernier recours ou depuis l'arcade de l'au-delà."),
+      button: t("Revive", "Relever"),
+      trial: true,
+    },
+    {
+      key: "third_person",
+      label: t("Third-person view", "Vue à la troisième personne"),
+      hint: t("Switches between first and third-person view.", "Passe de la vue à la première personne à la troisième, et inversement."),
+      button: t("Switch", "Basculer"),
+      trial: true,
+    },
+    {
+      key: "explosive_bullets",
+      label: t("Explosive bullets", "Balles explosives"),
+      hint: t("Switches on or off: each shot explodes where it lands, away from you.", "S'active ou se coupe : chaque tir explose là où il touche, loin de vous."),
+      button: t("Switch", "Basculer"),
+      trial: true,
+    },
   ];
 
   const keys = { allOff: t("End", "Fin"), savePosition: t("Page Up", "Page préc."), teleport: t("Page Down", "Page suiv.") };
@@ -281,6 +302,7 @@ function makeView(language: Lang): View {
       fps: { enabled: true, limit: 240, effective: 250 },
       windows: { dedicatedGpu: true, windowedOptimizationsOff: false },
       onTop: false,
+      sound: true,
     },
     logPath: "C:\\iw-helper\\logs\\session-20261013-190214.log",
   };
@@ -392,6 +414,9 @@ export function respond(command: string, args: Record<string, unknown>): unknown
       return;
     case "set_on_top":
       view.settings.onTop = Boolean(args.on);
+      return;
+    case "set_sound":
+      view.settings.sound = Boolean(args.on);
       return;
     default:
       return;

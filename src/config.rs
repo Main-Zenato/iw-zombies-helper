@@ -91,7 +91,7 @@ pub struct Trainer {
     pub enabled: bool,
     pub timescale: f32,
     pub money: i32,
-    /// Confirmation beep on every action.
+    /// Confirmation chime on every action.
     pub sound: bool,
 }
 
@@ -163,6 +163,9 @@ fn default_hotkeys() -> BTreeMap<String, String> {
         ("drop_fire_sale", ""),
         ("drop_infinite_ammo", ""),
         ("next_character", ""),
+        ("revive", ""),
+        ("third_person", ""),
+        ("explosive_bullets", ""),
         (ACTION_SAVE_POSITION, "PageUp"),
         (ACTION_TELEPORT, "PageDown"),
         (ACTION_ALL_OFF, "End"),

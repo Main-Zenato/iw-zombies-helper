@@ -232,6 +232,17 @@ fn set_fps(app: State<App>, enabled: bool, limit: i32) {
     app.send(Command::SetFps { enabled, limit });
 }
 
+/// Confirmation sound on actions and shortcuts, saved in the configuration; takes effect immediately.
+#[tauri::command]
+fn set_sound(app: State<App>, on: bool) {
+    app.set("trainer", "sound", Setting::Bool(on), |config| config.trainer.sound = on);
+    app.send(Command::SetSound(on));
+    // Heard right away: the switch says what it will sound like.
+    if on {
+        iw_helper::trainer::beep(true);
+    }
+}
+
 #[tauri::command]
 fn apply_windows_settings(app: State<App>) {
     let mut inner = app.inner.lock().unwrap();
@@ -389,6 +400,7 @@ fn main() {
             set_cores,
             set_priority,
             set_fps,
+            set_sound,
             apply_windows_settings,
             set_on_top,
             set_language,

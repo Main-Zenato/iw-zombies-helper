@@ -78,6 +78,8 @@ export interface Settings {
   /** Missing when the game was not found on disk. */
   windows: { dedicatedGpu: boolean; windowedOptimizationsOff: boolean } | null;
   onTop: boolean;
+  /** Confirmation sound on actions and shortcuts. */
+  sound: boolean;
 }
 
 export interface View {
@@ -150,6 +152,7 @@ export const api = {
   setFps: (enabled: boolean, limit: number) => call<void>("set_fps", { enabled, limit }),
   applyWindowsSettings: () => call<void>("apply_windows_settings"),
   setOnTop: (on: boolean) => call<void>("set_on_top", { on }),
+  setSound: (on: boolean) => call<void>("set_sound", { on }),
   setLanguage: (language: Lang) => call<void>("set_language", { language }),
   openLogs: () => call<void>("open_logs"),
 };
